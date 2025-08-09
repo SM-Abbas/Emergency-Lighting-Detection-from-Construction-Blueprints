@@ -1,112 +1,89 @@
 import os
-import json
-import re
+import cv2
+import numpy as np
+from app import EmergencyLightingDetector
 
-def update_emergency_detector():
-    # Read the current app.py file
-    app_py_path = 'app.py'
-    if not os.path.exists(app_py_path):
-        print(f"Error: {app_py_path} not found")
-        return
+def test_emergency_detector():
+    # Initialize the detector with the updated symbols
+    detector = EmergencyLightingDetector()
     
-    with open(app_py_path, 'r') as f:
-        app_py_content = f.read()
+    # Print the emergency symbols and fixture types
+    print("Emergency Symbols:")
+    print(detector.emergency_symbols)
+    print("\nFixture Types:")
+    for symbol, description in detector.fixture_types.items():
+        print(f"  {symbol}: {description}")
     
-    # Find the EmergencyLightingDetector class initialization
-    detector_init_start = app_py_content.find('class EmergencyLightingDetector:')
-    if detector_init_start == -1:
-        print("Error: Could not find EmergencyLightingDetector class in app.py")
-        return
+    # Test the detector on some sample text
+    test_texts = [
+        ["A1E", "Exit/Emergency", "Combo", "Unit"],
+        ["A1-E", "Type", "A1", "Emergency", "Fixture"],
+        ["A1/E", "Type", "A1", "with", "Emergency", "Battery", "Backup"],
+        ["EM-1", "Emergency", "Type", "1", "Fixture"],
+        ["EM-2", "Emergency", "Type", "2", "Fixture"],
+        ["EXIT-EM", "Exit", "Sign", "with", "Emergency", "Backup"],
+        ["EL", "Emergency", "Light"],
+        ["Regular", "lighting", "fixture", "not", "emergency"],
+        ["Standard", "2x4", "fixture", "no", "emergency", "backup"]
+    ]
     
-    # Find the emergency_symbols and fixture_types definitions
-    symbols_start = app_py_content.find('self.emergency_symbols = [', detector_init_start)
-    symbols_end = app_py_content.find(']', symbols_start) + 1
+    # Debug the problematic cases
+    print("\nSpecial debugging for A1-E and A1/E cases:")
+    for case in [["A1-E", "Type", "A1", "Emergency", "Fixture"], ["A1/E", "Type", "A1", "with", "Emergency", "Battery", "Backup"]]:
+        print(f"\nCase: {' '.join(case)}")
+        print(f"  First word: {case[0]}")
+        print(f"  First word upper: {case[0].upper()}")
+        print(f"  Check if first word equals 'A1-E': {case[0].upper() == 'A1-E'}")
+        print(f"  Check if first word equals 'A1/E': {case[0].upper() == 'A1/E'}")
+        print(f"  ASCII values of first word: {[ord(c) for c in case[0]]}")
+        print(f"  ASCII values of 'A1-E': {[ord(c) for c in 'A1-E']}")
+        print(f"  ASCII values of 'A1/E': {[ord(c) for c in 'A1/E']}")
+        print(f"  Text string: {' '.join(case)}")
+        print(f"  Text string upper: {' '.join(case).upper()}")
+        print(f"  'A1-E' in text_str.upper().split(): {'A1-E' in ' '.join(case).upper().split()}")
+        print(f"  'A1/E' in text_str.upper().split(): {'A1/E' in ' '.join(case).upper().split()}")
     
-    fixture_types_start = app_py_content.find('self.fixture_types = {', detector_init_start)
-    fixture_types_end = app_py_content.find('}', fixture_types_start) + 1
+    # Add some additional test cases for the specific A1-E and A1/E patterns
+    additional_tests = [
+        ["This", "is", "an", "A1-E", "emergency", "fixture"],
+        ["This", "is", "an", "A1/E", "emergency", "fixture"]
+    ]
+    test_texts.extend(additional_tests)
     
-    if symbols_start == -1 or fixture_types_start == -1:
-        print("Error: Could not find emergency_symbols or fixture_types in app.py")
-        return
+    # Print the raw text for debugging
+    print("\nRaw text for each test case:")
+    for words in test_texts:
+        print(f"  {' '.join(words)}")
+        print(f"  Words: {words}")
     
-    # Extract current symbols and fixture types
-    current_symbols_str = app_py_content[symbols_start:symbols_end]
-    current_fixture_types_str = app_py_content[fixture_types_start:fixture_types_end]
-    
-    print("\nCurrent emergency symbols and fixture types:")
-    print(current_symbols_str)
-    print(current_fixture_types_str)
-    
-    # Define new symbols and fixture types based on PDF analysis
-    # These are examples based on common emergency lighting symbols found in the PDF
-    new_symbols = ['A1-E', 'A1/E', 'EM-1', 'EM-2', 'EXIT-EM', 'EL']
-    new_fixture_types = {
-        'A1-E': 'Type A1 Emergency Fixture',
-        'A1/E': 'Type A1 with Emergency Battery Backup',
-        'EM-1': 'Emergency Type 1 Fixture',
-        'EM-2': 'Emergency Type 2 Fixture',
-        'EXIT-EM': 'Exit Sign with Emergency Backup',
-        'EL': 'Emergency Light'
-    }
-    
-    # Extract current symbols as a list
-    current_symbols_match = re.search(r"self\.emergency_symbols = \[([^\]]*)\]", current_symbols_str)
-    if current_symbols_match:
-        symbols_content = current_symbols_match.group(1)
-        current_symbols = re.findall(r"'([^']*)'|\"([^\"]*)\"|", symbols_content)
-        current_symbols = [s[0] or s[1] for s in current_symbols if s[0] or s[1]]
-    else:
-        current_symbols = []
-    
-    # Extract current fixture types as a dictionary
-    current_fixture_types = {}
-    fixture_type_matches = re.findall(r"'([^']*)': '([^']*)'|\"([^\"]*)\":\s*\"([^\"]*)\"|", current_fixture_types_str)
-    for match in fixture_type_matches:
-        if match[0] and match[1]:
-            current_fixture_types[match[0]] = match[1]
-        elif match[2] and match[3]:
-            current_fixture_types[match[2]] = match[3]
-    
-    # Add new symbols that don't already exist
-    updated_symbols = current_symbols.copy()
-    for symbol in new_symbols:
-        if symbol not in updated_symbols:
-            updated_symbols.append(symbol)
-    
-    # Add new fixture types that don't already exist
-    updated_fixture_types = current_fixture_types.copy()
-    for symbol, description in new_fixture_types.items():
-        if symbol not in updated_fixture_types:
-            updated_fixture_types[symbol] = description
-    
-    # Format updated symbols as a string
-    updated_symbols_str = "self.emergency_symbols = [" + ", ".join([f"'{s}'" for s in updated_symbols]) + "]"
-    
-    # Format updated fixture types as a string
-    updated_fixture_types_str = "self.fixture_types = {\n"
-    for symbol, description in updated_fixture_types.items():
-        updated_fixture_types_str += f"            '{symbol}': '{description}',\n"
-    updated_fixture_types_str = updated_fixture_types_str.rstrip(",\n") + "\n        }"
-    
-    # Replace the old definitions with the updated ones
-    # First, create a copy of the original content
-    updated_app_py_content = app_py_content
-    
-    # Replace the fixture_types first (since it appears later in the file)
-    updated_app_py_content = updated_app_py_content[:fixture_types_start] + updated_fixture_types_str + updated_app_py_content[fixture_types_end:]
-    
-    # Then replace the emergency_symbols
-    updated_app_py_content = updated_app_py_content[:symbols_start] + updated_symbols_str + updated_app_py_content[symbols_end:]
-    
-    # Write the updated content back to app.py
-    with open('app.py.updated', 'w') as f:
-        f.write(updated_app_py_content)
-    
-    print("\nUpdated emergency symbols and fixture types:")
-    print(updated_symbols_str)
-    print(updated_fixture_types_str)
-    print("\nUpdated app.py saved as app.py.updated")
-    print("Review the changes and rename the file to app.py if they look good.")
+    print("\nTesting emergency fixture detection:")
+    for words in test_texts:
+        # Convert to string for words in test_texts:
+        text_str = ' '.join(words)
+        is_emergency = detector.is_emergency_fixture(words)
+        
+        # Debug info for A1-E and A1/E cases
+        if words[0] in ['A1-E', 'A1/E'] or any(pattern in words for pattern in ['A1-E', 'A1/E']):
+            print(f"DEBUG for A1-E/A1/E pattern:")
+            print(f"  Words: {words}")
+            print(f"  First word: {words[0]}")
+            print(f"  First word upper: {words[0].upper()}")
+            print(f"  Check if first word equals 'A1-E': {words[0].upper() == 'A1-E'}")
+            print(f"  Check if first word equals 'A1/E': {words[0].upper() == 'A1/E'}")
+            print(f"  Text string: {text_str}")
+            print(f"  Text string upper: {text_str.upper()}")
+            print(f"  'A1-E' in text_str.upper().split(): {'A1-E' in text_str.upper().split()}")
+            print(f"  'A1/E' in text_str.upper().split(): {'A1/E' in text_str.upper().split()}")
+        
+        # Test identify_symbol method
+        symbol = detector.identify_symbol(words) if is_emergency else "None"
+        description = detector.fixture_types.get(symbol, f"Unknown Fixture Type ({symbol})") if symbol != "None" else "Not an emergency fixture"
+        
+        print(f"Text: '{text_str}'")
+        print(f"  Is Emergency: {is_emergency}")
+        print(f"  Symbol: {symbol}")
+        print(f"  Description: {description}")
+        print()
 
 if __name__ == "__main__":
-    update_emergency_detector()
+    test_emergency_detector()

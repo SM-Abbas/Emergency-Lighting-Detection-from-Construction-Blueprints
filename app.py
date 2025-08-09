@@ -88,6 +88,128 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 def index():
     return render_template('index.html')
 
+@app.route('/ml-model')
+def ml_model_page():
+    """Render the ML model management page"""
+    return render_template('ml_model.html')
+
+@app.route('/ml-status')
+def ml_status():
+    """Check the status of the ML model"""
+    # Create a detector instance
+    detector = EmergencyLightingDetector()
+    
+    # Check if ML model is available
+    ml_available = hasattr(detector, 'ml_integrator') and detector.ml_integrator.model is not None
+    
+    if ml_available:
+        model_info = {
+            'status': 'loaded',
+            'model_path': detector.ml_integrator.model_dir,
+            'class_names': list(detector.ml_integrator.class_indices.keys()) if detector.ml_integrator.class_indices else []
+        }
+    else:
+        model_info = {
+            'status': 'not_loaded',
+            'message': 'ML model is not available. Train a model first using train_model.py'
+        }
+    
+    return jsonify(model_info)
+
+@app.route('/train-model', methods=['POST'])
+def train_model():
+    """Trigger the training of the ML model"""
+    try:
+        # Generate a unique job ID
+        job_id = str(uuid.uuid4())
+        
+        # Start the training process in a background thread
+        threading.Thread(target=run_training_job, args=(job_id,)).start()
+        
+        return jsonify({
+            'status': 'training_started',
+            'job_id': job_id,
+            'message': 'Model training has been started in the background'
+        })
+    except Exception as e:
+        logger.error(f"Error starting model training: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def run_training_job(job_id):
+    """Run the model training job in the background"""
+    try:
+        # Update job status in database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO processing_jobs (id, pdf_name, status) VALUES (?, ?, ?)',
+            (job_id, 'ml_model_training', 'processing')
+        )
+        conn.commit()
+        
+        # Run the data preparation script
+        import subprocess
+        logger.info("Starting data preparation...")
+        prep_result = subprocess.run(['python', 'prepare_training_data.py'], capture_output=True, text=True)
+        
+        if prep_result.returncode != 0:
+            raise Exception(f"Data preparation failed: {prep_result.stderr}")
+        
+        # Run the model training script
+        logger.info("Starting model training...")
+        train_result = subprocess.run(['python', 'train_model.py'], capture_output=True, text=True)
+        
+        if train_result.returncode != 0:
+            raise Exception(f"Model training failed: {train_result.stderr}")
+        
+        # Integrate the model with the detector
+        logger.info("Integrating ML model...")
+        from integrate_ml_model import patch_detector
+        patch_detector()
+        
+        # Update job status to completed
+        cursor.execute(
+            'UPDATE processing_jobs SET status = ?, completed_at = ?, result = ? WHERE id = ?',
+            ('completed', datetime.now().isoformat(), 'Model training completed successfully', job_id)
+        )
+        conn.commit()
+        
+        logger.info("ML model training completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Error in training job: {str(e)}")
+        
+        # Update job status to failed
+        try:
+            cursor.execute(
+                'UPDATE processing_jobs SET status = ?, completed_at = ?, result = ? WHERE id = ?',
+                ('failed', datetime.now().isoformat(), str(e), job_id)
+            )
+            conn.commit()
+        except Exception as db_error:
+            logger.error(f"Error updating job status: {str(db_error)}")
+
+@app.route('/job-status/<job_id>')
+def job_status(job_id):
+    """Check the status of a processing job"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT status, completed_at, result FROM processing_jobs WHERE id = ?', (job_id,))
+        job = cursor.fetchone()
+        
+        if job is None:
+            return jsonify({'error': 'Job not found'}), 404
+        
+        return jsonify({
+            'status': job[0],
+            'completed_at': job[1],
+            'result': job[2]
+        })
+    except Exception as e:
+        logger.error(f"Error checking job status: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -97,8 +219,8 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
-    if not file.filename.lower().endswith('.png'):
-        return jsonify({'error': 'Only PNG files are allowed'}), 400
+    if not file.filename.lower().endswith(('.png', '.pdf')):
+        return jsonify({'error': 'Only PNG and PDF files are allowed'}), 400
 
     try:
         # Save the file
@@ -106,25 +228,44 @@ def upload_file():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        # Process the image
-        image = Image.open(filepath)
-        detector = EmergencyLightingDetector()
-        
-        # Check if Tesseract is available and warn the user if it's not
-        if not TESSERACT_AVAILABLE:
-            logger.warning("Tesseract OCR is not installed. Text extraction will be limited.")
-        
-        # Detect emergency lights
-        detections = detector.detect_emergency_lights(image, filename)
-        
-        # Extract static content
-        static_content = detector.extract_static_content([{'image': image, 'sheet_name': filename}])
-        
-        # Combine results
-        results = {
-            'detections': detections,
-            'rulebook': static_content.get('rulebook', [])
-        }
+        # Process the file
+        if filename.lower().endswith('.pdf'):
+            # Convert PDF to images
+            images = pdf_to_images(filepath)
+            if not images:
+                return jsonify({'error': 'Failed to extract images from PDF'}), 500
+            
+            # Process each image
+            all_detections = []
+            all_static_content = {'rulebook': []}
+            
+            for i, image in enumerate(images):
+                sheet_name = f"{os.path.splitext(filename)[0]}_page_{i+1}"
+                all_detections.extend(process_single_image(image, sheet_name))
+                
+                # Extract static content from each page
+                detector = EmergencyLightingDetector()
+                static_content = detector.extract_static_content([{'image': image, 'sheet_name': sheet_name}])
+                all_static_content['rulebook'].extend(static_content.get('rulebook', []))
+            
+            results = {
+                'detections': all_detections,
+                'rulebook': all_static_content['rulebook']
+            }
+        else:
+            # Process a single image
+            image = Image.open(filepath)
+            detections = process_single_image(image, filename)
+            
+            # Extract static content
+            detector = EmergencyLightingDetector()
+            static_content = detector.extract_static_content([{'image': image, 'sheet_name': filename}])
+            
+            # Combine results
+            results = {
+                'detections': detections,
+                'rulebook': static_content.get('rulebook', [])
+            }
 
         # Save results to database
         conn = get_db_connection()
@@ -145,6 +286,31 @@ def upload_file():
         # Clean up uploaded file
         if os.path.exists(filepath):
             os.remove(filepath)
+
+def process_single_image(image, sheet_name):
+    """Process a single image using both traditional and ML detection methods"""
+    detector = EmergencyLightingDetector()
+    
+    # Check if Tesseract is available and warn the user if it's not
+    if not TESSERACT_AVAILABLE:
+        logger.warning("Tesseract OCR is not installed. Text extraction will be limited.")
+    
+    # Check if ML model is available
+    use_ml = hasattr(detector, 'ml_integrator') and detector.ml_integrator.model is not None
+    
+    # Detect emergency lights
+    if use_ml:
+        logger.info(f"Using ML model for detection on {sheet_name}")
+        detections = detector.detect_emergency_lights(image, use_ml=True)
+    else:
+        logger.info(f"Using traditional detection on {sheet_name}")
+        detections = detector.detect_emergency_lights(image)
+    
+    # Add sheet name to each detection
+    for detection in detections:
+        detection['sheet_name'] = sheet_name
+    
+    return detections
 
 # Database setup
 def init_db():
@@ -178,6 +344,15 @@ def init_db():
     conn.close()
 
 init_db()
+
+# Initialize ML model integration
+try:
+    from integrate_ml_model import patch_detector
+    patch_detector()
+    logger.info("ML model integration initialized successfully")
+except Exception as e:
+    logger.warning(f"Could not initialize ML model integration: {str(e)}")
+    logger.info("Will use traditional detection methods only")
 
 class EmergencyLightingDetector:
     def __init__(self):

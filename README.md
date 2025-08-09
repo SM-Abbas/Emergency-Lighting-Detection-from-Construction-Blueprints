@@ -1,6 +1,6 @@
 # Emergency Lighting Detection from Construction Blueprints
 
-This project implements an AI Vision pipeline that extracts emergency lighting information from electrical drawings and prepares structured outputs using computer vision and LLMs.
+This project implements an AI Vision pipeline that extracts emergency lighting information from electrical drawings and prepares structured outputs using computer vision, machine learning, and LLMs.
 
 ## Features
 
@@ -9,16 +9,39 @@ This project implements an AI Vision pipeline that extracts emergency lighting i
 - Captures bounding boxes and spatial locations of fixtures and nearby text/symbols
 - Extracts static content like general notes and lighting schedule tables
 - Groups lighting fixtures based on symbols and provides counts
+- Uses machine learning to improve detection accuracy and efficiency
+
+## ML Model Implementation
+
+### Overview
+The project now includes a machine learning model for emergency lighting detection. The ML model complements the traditional computer vision approach, providing improved accuracy and robustness.
+
+### Components
+- **ML Model**: Convolutional Neural Network (CNN) for classifying emergency lighting fixtures
+- **Training Pipeline**: Scripts for preparing training data and training the model
+- **Integration**: Seamless integration with the existing detection pipeline
+
+### Files
+- `ml_model.py`: Implementation of the CNN model
+- `prepare_training_data.py`: Script to extract and prepare training data
+- `train_model.py`: Script to train the ML model
+- `integrate_ml_model.py`: Utilities to integrate the model with the main application
+
+### Web Interface
+A dedicated ML model management page is available at `/ml-model`, where you can:
+- Check the current model status
+- Train a new model
+- Monitor training progress
 
 ## API Endpoints
 
 ### 1. Upload and Trigger Processing
 
 ```
-POST /blueprints/upload
+POST /upload
 ```
 
-**Purpose**: Upload a PDF and initiate background processing (CV + OCR + LLM)
+**Purpose**: Upload a PDF or PNG and initiate processing (CV + ML + OCR + LLM)
 
 **Request**:
 - `file`: PDF file (multipart/form-data)
@@ -75,7 +98,69 @@ GET /blueprints/result?pdf_name=<pdf_name>
 }
 ```
 
-### 3. Get Annotation Image
+### 3. ML Model Status
+
+```
+GET /ml-status
+```
+
+**Purpose**: Check the status of the ML model
+
+**Response (if model loaded)**:
+```json
+{
+  "status": "loaded",
+  "model_path": "models",
+  "class_names": ["A1E", "A1-E", "A1/E", "EM-1", "EM-2", "EXIT-EM", "EL", "UNKNOWN", "NOT_EMERGENCY"]
+}
+```
+
+**Response (if model not loaded)**:
+```json
+{
+  "status": "not_loaded",
+  "message": "ML model is not available. Train a model first using train_model.py"
+}
+```
+
+### 4. Train ML Model
+
+```
+POST /train-model
+```
+
+**Purpose**: Trigger the training of a new ML model
+
+**Response**:
+```json
+{
+  "status": "training_started",
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "message": "Model training has been started in the background"
+}
+```
+
+### 5. Check Training Job Status
+
+```
+GET /job-status/<job_id>
+```
+
+**Purpose**: Check the status of a model training job
+
+**Path Param**:
+- `job_id`: The ID of the training job
+
+**Response**:
+```json
+{
+  "status": "processing",
+  "completed_at": null,
+  "result": null
+}
+```
+
+### 6. Get Annotation Image
 
 ```
 GET /blueprints/annotation/<pdf_name>
