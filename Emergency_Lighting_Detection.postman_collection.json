@@ -1,0 +1,96 @@
+{
+  "info": {
+    "_postman_id": "b5e8e5a5-5b5b-4b5b-8b5b-5b5b5b5b5b5b",
+    "name": "Emergency Lighting Detection",
+    "description": "API collection for Emergency Lighting Detection from Construction Blueprints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload Blueprint",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            },
+            {
+              "key": "project_id",
+              "value": "project123",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/blueprints/upload",
+          "host": ["{{base_url}}"],
+          "path": ["blueprints", "upload"]
+        },
+        "description": "Upload a PDF and initiate background processing"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Result",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/blueprints/result?pdf_name=example.pdf",
+          "host": ["{{base_url}}"],
+          "path": ["blueprints", "result"],
+          "query": [
+            {
+              "key": "pdf_name",
+              "value": "example.pdf"
+            }
+          ]
+        },
+        "description": "Retrieve the final grouped result for a given PDF name"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Annotation",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/blueprints/annotation/example.pdf",
+          "host": ["{{base_url}}"],
+          "path": ["blueprints", "annotation", "example.pdf"]
+        },
+        "description": "Get annotation image for a PDF"
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Health check endpoint"
+      },
+      "response": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}

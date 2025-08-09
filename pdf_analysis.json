@@ -1,0 +1,178 @@
+[
+    {
+        "image_path": "pdf_page1.png",
+        "visualization_path": "pdf_page1_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page2.png",
+        "visualization_path": "pdf_page2_analysis.png",
+        "is_legend": true,
+        "is_schedule": true,
+        "contains_emergency": true,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 12,
+        "emergency_symbol_count": 12
+    },
+    {
+        "image_path": "pdf_page3.png",
+        "visualization_path": "pdf_page3_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page4.png",
+        "visualization_path": "pdf_page4_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page5.png",
+        "visualization_path": "pdf_page5_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page6.png",
+        "visualization_path": "pdf_page6_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page7.png",
+        "visualization_path": "pdf_page7_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page8.png",
+        "visualization_path": "pdf_page8_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page9.png",
+        "visualization_path": "pdf_page9_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page10.png",
+        "visualization_path": "pdf_page10_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page11.png",
+        "visualization_path": "pdf_page11_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page12.png",
+        "visualization_path": "pdf_page12_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page13.png",
+        "visualization_path": "pdf_page13_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page14.png",
+        "visualization_path": "pdf_page14_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page15.png",
+        "visualization_path": "pdf_page15_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    },
+    {
+        "image_path": "pdf_page16.png",
+        "visualization_path": "pdf_page16_analysis.png",
+        "is_legend": false,
+        "is_schedule": true,
+        "contains_emergency": false,
+        "has_tables": true,
+        "has_grid": true,
+        "potential_symbols": 0,
+        "emergency_symbol_count": 0
+    }
+]
